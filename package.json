@@ -1,7 +1,7 @@
 {
-  "name": "ptinbot",
+  "name": "ghmc-grievances-bot",
   "version": "1.0.0",
-  "description": "GHMC Property Tax Lookup Bot",
+  "description": "GHMC Grievances Bot",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

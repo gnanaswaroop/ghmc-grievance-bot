@@ -1,6 +1,5 @@
 const config = require("./config");
 const TelegramBot = require("node-telegram-bot-api");
-const request = require("request");
 const winston = require("winston");
 const https = require("https");
 var cheerio = require('cheerio');

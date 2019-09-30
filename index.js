@@ -117,7 +117,7 @@ var sendMessage = function(message) {
 };
 
 var sendHelp = function() {
-  var helpMessage = "Send a message with /status <grievance number>";
+  var helpMessage = "Send a message with /status [grievance number]";
   sendMessage(helpMessage);
 };
 

@@ -10,7 +10,8 @@
   "license": "ISC",
   "dependencies": {
     "cheerio": "^1.0.0-rc.3",
-    "node-telegram-bot-api": "^0.30.0",
+    "telegraf": "^3.33.3",
+    "telegraf-command-parts": "1.0.3",
     "winston": "^3.0.0-rc6"
   }
 }

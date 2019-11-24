@@ -1,8 +1,9 @@
 const config = require("./config");
-const TelegramBot = require("node-telegram-bot-api");
 const winston = require("winston");
 const https = require("https");
 var cheerio = require('cheerio');
+const Telegraf = require('telegraf')
+const commandParts = require('telegraf-command-parts');
 
 const logger = winston.createLogger({
   levels: winston.config.syslog.levels,
@@ -17,11 +18,7 @@ const logger = winston.createLogger({
 
 // replace the value below with the Telegram token you receive from @BotFather
 const token = config.botToken;
-
-var chatId = "";
-
-// Create a bot that uses 'polling' to fetch new updates
-const bot = new TelegramBot(token, { polling: true });
+const bot = new Telegraf(token)
 
 var log = function(message) {
   console.log(message);
@@ -65,26 +62,22 @@ var prepareResponse = function(htmlBody, compiledURL) {
   return results;
 }
 
-var queryGHMCWebsite = function(grievanceNumber) {
+var queryGHMCWebsite = function(ctx, grievanceNumber) {
   debugLog("Querying GHMC website for grievanceNumber " + grievanceNumber);
   var url = ghmcURL + grievanceNumber;
   debugLog("URL for querying is " + url);
 
   https
     .get(url, res => {
-      // console.log("statusCode:", res.statusCode);
-      // console.log("headers:", res.headers);
-
       var body = "";
       var isError = false;
       if (res.statusCode == 200) {
         debugLog("Success " + grievanceNumber);
-        sendMessage("Grievance " + grievanceNumber + " is valid ");
-
+        // sendMessage(ctx, "Grievance " + grievanceNumber + " is valid ");
       } else {
         isError = true;
         debugLog("Error " + grievanceNumber);
-        sendMessage("Grievance " + grievanceNumber + " is invalid ");
+        sendMessage(ctx, "Grievance " + grievanceNumber + " is invalid ");
       }
 
       res.on("data", d => {
@@ -94,56 +87,34 @@ var queryGHMCWebsite = function(grievanceNumber) {
       res.on('end', function() {
         if(!isError) {
           var response = prepareResponse(body, url);
-          sendMessage(response);
+          sendMessage(ctx, response);
         }
         isError = false;
       });
     })
     .on("error", e => {
       debugLog("Error " + e);
-      sendMessage("Grievance " + grievanceNumber + " is invalid ");
+      sendMessage(ctx, "Grievance " + grievanceNumber + " is invalid ");
     });
 };
 
-var processMessage = function(inputText) {
-  debugLog("Processing for payload " + inputText);
-  // sendMessage("ACK " + inputText);
-
-  queryGHMCWebsite(inputText);
+var processMessage = function(ctx, inputText) {
+  var messageTextValue = ctx.state.command.args;
+  debugLog("Processing for payload " + messageTextValue);
+  queryGHMCWebsite(ctx, messageTextValue);
 };
 
-var sendMessage = function(message) {
-  bot.sendMessage(chatId, message, { parse_mode: "HTML" });
+var sendMessage = function(ctx, message) {
+  ctx.replyWithHTML(message);
 };
 
-var sendHelp = function() {
+var sendHelp = function(ctx) {
   var helpMessage = "Send a message with /status [grievance number]";
-  sendMessage(helpMessage);
+  sendMessage(ctx, helpMessage);
 };
 
-bot.onText(/\/status (.+)/, (msg, match) => {
-  chatId = msg.chat.id;
-  const resp = match[1]; // the captured "whatever"
-  processMessage(match[1]);
-});
-
-bot.onText(/\/help/, (msg, match) => {
-  chatId = msg.chat.id;
-  const resp = match[1]; // the captured "whatever"
-  sendHelp();
-});
-
-bot.on("message", msg => {
-  chatId = msg.chat.id;
-  const message = msg.text;
-
-  try {
-    if (!message.startsWith("/status")) {
-      log("Command not found, send /help message");
-      sendHelp();
-      return;
-    }
-  } catch (ex) {
-    log("Error observed " + ex);
-  }
-});
+bot.use(commandParts());
+bot.start((ctx) => ctx.reply('Welcome to the GHMC Grievances Bot. Please use /help for usage details!'))
+bot.help((ctx) => sendHelp(ctx));
+bot.command('status', (ctx) => processMessage(ctx, ctx.message));
+bot.launch()
